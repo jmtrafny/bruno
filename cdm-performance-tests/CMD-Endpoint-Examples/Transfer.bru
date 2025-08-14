@@ -1,0 +1,31 @@
+meta {
+  name: Transfer
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8003/cdm/api/v1/storage/transfer
+  body: json
+  auth: inherit
+}
+
+headers {
+  requestId: 9876543210
+  transactionId: 0123456789
+  userId: 3129426
+}
+
+body:json {
+  {
+    "sourceBucket": "vots-dev-bucket",
+    "sourcePrefix": "STAGE/INGRESS",
+    "destinationBucket": "vots-dev-bucket",
+    "destinationPrefix": "STAGE/QUARANTINE",
+    "configItemId": "XXX4D-9690-N252"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

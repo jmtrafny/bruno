@@ -1,0 +1,41 @@
+meta {
+  name: CDM Performance Test Results Summary
+  type: http
+  seq: 99
+}
+
+get {
+  url: {{baseUrl}}/health
+  auth: none
+}
+
+script:post-response {
+  // Get all stored results from individual tests across all directories
+  const results = bru.getVar("collectionResults") || [];
+  
+  // Only output if we have results
+  if (results.length > 0) {
+    
+    // Output CSV header (only once)
+    console.log("CSV_HEADER:Test ID,API Endpoint,Test Description,Test Input Summary,Number of Requests,Concurrent Users,Expected Outcome,Actual Response Time (ms),Throughput (requests/sec),Notes / Observations");
+    
+    // Output each result as CSV line
+    results.forEach(result => {
+      console.log(`CSV_RESULT:${result.testId},${result.endpoint},${result.description},${result.input},${result.requests},${result.users},${result.result},${result.responseTime},${result.throughput},${result.notes}`);
+    });
+    
+    // Optional: Summary line
+    const passedTests = results.filter(r => r.result === 'PASS').length;
+    const failedTests = results.filter(r => r.result === 'FAIL').length;
+    const avgResponseTime = results.length > 0 ? (results.reduce((sum, r) => sum + r.responseTime, 0) / results.length).toFixed(0) : 0;
+    
+    console.log(`CSV_SUMMARY:TOTAL,ALL_ENDPOINTS,Performance Test Summary,All Tests,${results.length},Multiple,${failedTests === 0 ? 'PASS' : 'PARTIAL'},${avgResponseTime},N/A,Passed: ${passedTests}/${results.length} (${((passedTests/results.length)*100).toFixed(1)}%)`);
+  }
+}
+
+tests {
+  test("Collection results available", function() {
+    const results = bru.getVar("collectionResults") || [];
+    expect(results.length).to.be.greaterThan(0);
+  });
+}
