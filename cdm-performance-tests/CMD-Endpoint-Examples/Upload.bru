@@ -1,0 +1,29 @@
+meta {
+  name: Upload
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8003/cdm/api/v1/storage/directory/upload
+  body: json
+  auth: inherit
+}
+
+headers {
+  requestId: 9876543210
+  transactionId: 0123456789
+  userId: 3129426
+}
+
+body:json {
+  {
+    "sourcePath": "C:/Users/oi926e/Downloads/XXX4D-9690-N252",
+    "destinationBucket": "vots-dev-bucket",
+    "destinationPrefix": "STAGE/INGRESS"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
