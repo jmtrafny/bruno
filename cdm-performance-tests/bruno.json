@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "cdm-performance-tests",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

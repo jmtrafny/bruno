@@ -1,0 +1,107 @@
+meta {
+  name: transfer
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/directory/download
+  body: json
+  auth: none
+}
+
+headers {
+  userId: 3129426
+  transactionId: 6249213
+}
+
+body:json {
+  {
+    "sourceBucket": "{{testBucket}}",
+    "sourcePrefix": "test-data/small-dataset",
+    "destinationPath": "{{scratchPath}}/cdm-perf/small-test"
+  }
+}
+
+script:pre-request {
+  // Record start time
+  bru.setVar("startTime", Date.now());
+  console.log("Starting small directory download test at:", new Date().toISOString());
+  console.log("Expected response time threshold:", bru.getEnvVar("smallDirThreshold") + "ms");
+}
+
+script:post-response {
+  // Calculate response time
+  const startTime = bru.getVar("startTime");
+  const responseTime = Date.now() - startTime;
+  const threshold = parseInt(bru.getEnvVar("smallDirThreshold"));
+  
+  console.log("=== Test 1.1 Results ===");
+  console.log("Response Time:", responseTime + "ms");
+  console.log("Threshold:", threshold + "ms");
+  console.log("HTTP Status:", res.status);
+  console.log("API Status:", res.body?.status);
+  console.log("Files Downloaded:", res.body?.data?.fileCount);
+  console.log("Destination:", res.body?.data?.destination);
+  
+  // Store results for reporting
+  bru.setVar("test1_1_responseTime", responseTime);
+  bru.setVar("test1_1_httpStatus", res.status);
+  bru.setVar("test1_1_apiStatus", res.body?.status);
+  bru.setVar("test1_1_fileCount", res.body?.data?.fileCount);
+  
+  // Performance check
+  const performancePass = responseTime < threshold;
+  console.log("Performance PASS:", performancePass);
+  
+  // Clean CSV output
+  console.log(`CSV_RESULT:1.1,/directory/download,Download small directory,10 files 10MB,1,1,${performancePass ? 'PASS' : 'FAIL'},${responseTime},N/A,Files: ${res.body?.data?.fileCount || 'N/A'}`);
+  
+  if (!bru.getVar("collectionResults")) {
+    bru.setVar("collectionResults", []);
+  }
+  const results = bru.getVar("collectionResults");
+  results.push({
+    testId: "1.1",
+    endpoint: "/directory/download", 
+    description: "Download small directory",
+    input: "10 files 10MB",
+    requests: 1,
+    users: 1,
+    result: performancePass ? 'PASS' : 'FAIL',
+    responseTime: responseTime,
+    throughput: "N/A",
+    notes: `Files: ${res.body?.data?.fileCount || 'N/A'}`
+  });
+  bru.setVar("collectionResults", results);
+}
+
+tests {
+  test("HTTP status is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("API status is SUCCESS", function() {
+    expect(res.body.status).to.equal("SUCCESS");
+  });
+  
+  test("Response time within threshold", function() {  
+    const threshold = Number(bru.getEnvVar("smallDirThreshold"));
+    expect(res.responseTime).to.be.lessThan(threshold);
+  });
+  
+  test("Valid response structure", function() {
+    expect(res.body).to.have.property('transactionId');
+    expect(res.body).to.have.property('status');
+    expect(res.body).to.have.property('data');
+    expect(res.body.data).to.have.property('destination');
+    expect(res.body.data).to.have.property('fileCount');
+    expect(res.body.data).to.have.property('downloadedFiles');
+  });
+  
+  test("Files were downloaded", function() {
+    expect(res.body.data.fileCount).to.be.greaterThan(0);
+    expect(res.body.data.downloadedFiles).to.be.an('array');
+    expect(res.body.data.downloadedFiles.length).to.equal(res.body.data.fileCount);
+  });
+}
